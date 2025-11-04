@@ -1,0 +1,48 @@
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("kl_lab_synthetic.csv")
+print("Data Preview:")
+print(df.head())
+
+le = LabelEncoder()
+df["Packing_Type"] = le.fit_transform(df["Packing_Type"])
+
+X = df[['Re', 'Sc', 'D_AB_m2_s', 'D_m', 'rho_kg_m3', 'mu_Pa_s',
+        'nu_m2_s', 'Packing_Type', 'Temperature_K', 'Pressure_Pa']]
+y = df['k_L_m_s']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+lr = LinearRegression()
+lr.fit(X_train, y_train)
+
+rf = RandomForestRegressor(n_estimators=200, random_state=42)
+rf.fit(X_train, y_train)
+
+y_pred_lr = lr.predict(X_test)
+y_pred_rf = rf.predict(X_test)
+
+def evaluate(model_name, y_true, y_pred):
+    print(f"\n📊 {model_name} Results")
+    print("R² Score:", round(r2_score(y_true, y_pred), 4))
+    print("MAE:", format(mean_absolute_error(y_true, y_pred), ".2e"))
+    print("RMSE:", format(np.sqrt(mean_squared_error(y_true, y_pred)), ".2e"))
+
+evaluate("Linear Regression", y_test, y_pred_lr)
+evaluate("Random Forest", y_test, y_pred_rf)
+
+plt.figure(figsize=(6,6))
+plt.scatter(y_test, y_pred_rf, color='blue', label='Random Forest')
+plt.scatter(y_test, y_pred_lr, color='red', label='Linear Regression')
+plt.xlabel("Actual k_L (m/s)")
+plt.ylabel("Predicted k_L (m/s)")
+plt.title("Predicted vs Actual k_L")
+plt.legend()
+plt.grid(True)
+plt.show()
